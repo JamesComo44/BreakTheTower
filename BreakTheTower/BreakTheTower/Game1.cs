@@ -9,6 +9,8 @@ namespace BreakTheTower
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
+        private SpriteFont _debugFont;
+        private KeyboardInputController _inputController;
 
         private Camera3D __camera;
         private Texture2D __islandTexture;
@@ -23,6 +25,8 @@ namespace BreakTheTower
 
         protected override void Initialize()
         {
+            _inputController = new KeyboardInputController();
+
             __camera = new Camera3D(GraphicsDevice.Viewport.AspectRatio)
             {
                 Position = new Vector3(0, -2f, 2f)
@@ -36,23 +40,29 @@ namespace BreakTheTower
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _debugFont = Content.Load<SpriteFont>("Fonts/debug");
 
             __islandTexture = Content.Load<Texture2D>("Test_Island");
             __texturedQuad.InitializeEffect(GraphicsDevice, __camera, __islandTexture);
         }
 
-        KeyboardState prevKeyboardState;
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+            try
+            {
+                _inputController.Update();
+            }
+            catch (AbortGameException exception)
+            {
+                System.Console.WriteLine(exception.Message);
                 Exit();
+            }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.O) && !prevKeyboardState.IsKeyDown(Keys.O))
+            if (_inputController.WasKeyPressed(Keys.O))
                 __camera.Orbit = !__camera.Orbit;
 
             __camera.Update();
 
-            prevKeyboardState = Keyboard.GetState();
             base.Update(gameTime);
         }
 
@@ -61,6 +71,10 @@ namespace BreakTheTower
             GraphicsDevice.Clear(Color.LightBlue);
 
             __texturedQuad.Draw(GraphicsDevice, __camera);
+
+            _spriteBatch.Begin();
+            _spriteBatch.DrawString(_debugFont, __camera.Position.ToString(), new Vector2(0, 0), Color.Black);
+            _spriteBatch.End();
 
             base.Draw(gameTime);
         }
